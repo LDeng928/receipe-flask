@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, request, abort, redirect, url_for
+from flask import Flask, render_template, request, abort, redirect, url_for, flash
 import sqlite3
 from sqlite3 import Error
 from wtforms import Form, StringField, validators
@@ -49,6 +49,7 @@ class CreateRecipeForm(Form):
 
 
 app = Flask(__name__)
+app.secret_key = 'secret123'
 
 
 @app.route('/')
@@ -92,15 +93,34 @@ def create_recipe():
                         "INSERT INTO recipes (title, image, link) VALUES (?, ?, ?)", (title, image, link))
 
                     connection.commit()
+                    flash("You have added a new recipe.", "success")
                     print("Record inserted successfully")
         except:
             connection.rollback()
             print("Error in insert statement")
         finally:
+
             return redirect(url_for('home'))
     elif request.method == 'GET':
         # return the form to the template
         return render_template('create-recipe.html', form=form)
+
+
+@app.route('/recipe/delete/<id>/', methods=['POST'])
+def delete_recipe(id):
+    try:
+        with create_connection("recipes.db") as connection:
+            delete_a_recipe = "DELETE FROM recipes WHERE id=?"
+            cursor = connection.cursor()
+            cursor.execute(delete_a_recipe, (id,))
+            connection.commit()
+            flash("Recipe deleted successfully.", "success")
+    except:
+        connection.rollback()
+        print("Error in delete statement")
+    finally:
+
+        return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
