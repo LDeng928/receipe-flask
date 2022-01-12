@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, abort, redirect, url_for
 import sqlite3
 from sqlite3 import Error
+from wtforms import Form, StringField, validators
 
 # Connect to database
 
@@ -38,20 +39,14 @@ CREATE TABLE IF NOT EXISTS recipes (
 );
 """
 
+# Form class
 
-# Initial placement data
-recipes = [
-    {
-        "title": "BBQ Sweet and Sour Chicken Wings",
-        "image": "https://image.freepik.com/free-photo/chicken-wings-barbecue-sweetly-sour-sauce-picnic-summer-menu-tasty-food-top-view-flat-lay_2829-6471.jpg",
-        "link": "https://cookpad.com/us/recipes/347447-easy-sweet-sour-bbq-chicken"
-    },
-    {
-        "title": "Striploin Steak",
-        "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
-        "link": "https://tasty.co/recipe/garlic-butter-steak"
-    }
-]
+
+class CreateRecipeForm(Form):
+    title = StringField("Recipe Title", [validators.Length(min=4, max=50)])
+    image = StringField("Image Address", [validators.Length(min=10)])
+    link = StringField("Recipe Link", [validators.Length(min=10)])
+
 
 app = Flask(__name__)
 
@@ -67,7 +62,6 @@ def home():
             cursor = connection.cursor()
             cursor.execute(select_all_recipes)
             recipes = cursor.fetchall()
-            print(recipes)
             return recipes
     except Error as e:
         print(f"The error '{e}' occurred")
@@ -80,26 +74,33 @@ def about():
     return render_template('about.html')
 
 
-@app.route('/recipe/', methods=['POST'])
+@app.route('/recipe/', methods=['POST', 'GET'])
 def create_recipe():
+    # instantiate the form to send when the request.method != POST
+    form = CreateRecipeForm()
     if request.method == 'POST':
         try:
-            title = request.form['title']
-            image = request.form['image']
-            link = request.form['link']
+            form = CreateRecipeForm(request.form)
+            if form.validate():
+                title = form.title.data
+                image = form.image.data
+                link = form.link.data
 
-            with create_connection("recipes.db") as connection:
-                cursor = connection.cursor()
-                cursor.execute(
-                    "INSERT INTO recipes (title, image, link) VALUES (?, ?, ?)", (title, image, link))
+                with create_connection("recipes.db") as connection:
+                    cursor = connection.cursor()
+                    cursor.execute(
+                        "INSERT INTO recipes (title, image, link) VALUES (?, ?, ?)", (title, image, link))
 
-                connection.commit()
-                print("Record inserted successfully")
+                    connection.commit()
+                    print("Record inserted successfully")
         except:
             connection.rollback()
             print("Error in insert statement")
         finally:
             return redirect(url_for('home'))
+    elif request.method == 'GET':
+        # return the form to the template
+        return render_template('create-recipe.html', form=form)
 
 
 if __name__ == '__main__':
