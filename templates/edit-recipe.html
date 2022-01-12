@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% set active_page = "Add Recipe" %}
+{% set active_page = "Edit Recipe" %}
 {% block title %}Add Recipe{% endblock %}
 {% from "_formhelpers.html" import render_field %}
 {% block content %}
@@ -10,7 +10,7 @@
       {{ render_field(form.image, class="form-control") }}
       {{ render_field(form.link, class="form-control") }}
     </dl>
-    <button class="btn btn-primary" type=submit>Add New Recipe</button>
+    <button class="btn btn-primary" type=submit>Submit</button>
   </form>
 </div>
 
